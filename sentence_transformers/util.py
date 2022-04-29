@@ -13,6 +13,19 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+def calc_cosnet_loss(y_pred: Tensor, y_ture: Tensor) -> Tensor:
+    y_pred = y_pred[:, None] - y_pred[None, :]
+    y_ture = y_ture[:, None] < y_ture[None, :]
+    y_ture = y_ture.float()
+    y_pred = y_pred - (1 - y_ture) * 1e12
+    y_pred = y_pred.view(-1)
+    if torch.cuda.is_available():
+        y_pred = torch.cat((torch.tensor([0]).float().cuda(), y_pred), dim=0)
+    else:
+        y_pred = torch.cat((torch.tensor([0]).float(), y_pred), dim=0)
+
+    return torch.logsumexp(y_pred, dim=0)
+
 def pytorch_cos_sim(a: Tensor, b: Tensor):
     """
     Computes the cosine similarity cos_sim(a[i], b[j]) for all i and j.
